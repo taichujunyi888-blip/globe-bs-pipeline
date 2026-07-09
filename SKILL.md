@@ -1,10 +1,12 @@
 ---
 name: globe-bs-pipeline
 description: >
-  GLOBE 软件 EM302 多波束后向散射 (backscatter) 处理自动化 skill。
+  GLOBE 软件多波束后向散射 (backscatter) 处理自动化 skill (已用 EM302 实测验证)。
   给定 GLOBE 导出的 .xsf.nc (或原始 .all)，纯命令行 (无需 GUI) 一键生成
   bsar/dtmsliding 全部产物 + 对比图。适用于测绘/海洋勘测课程设计、报告。
   关键前提: 用户机器上装有 GLOBE (自带 miniconda + PyAT 0.1.42), 通过 GLOBE_HOME 环境变量或 --globe_home 指向它。
+  注意: 声呐类型靠 PyAT 的 sounder_type=AUTO 自动检测, 代码不绑定 EM302;
+  但本 skill 仅用 EM302 数据完整验证过, 其他多波束声呐未经测试, 参数可能需微调。
 triggers:
   - 用户要 "GLOBE 后向散射处理" / "bsar" / "bsar dtm" / "Angular Renormalization"
   - 用户要 "自动生成 backscatter 图" / "EM302 后向散射对比图"
@@ -48,9 +50,14 @@ python -m gws.service.deferred_service_executor  (配不同 config json)
    但 **不能** 同时依赖 antialias: `spatial_antialiasing=True` 在命令行下
    会崩溃 (GLOBE 自带 conda 环境里 antialias 插值 segfault)。
    → 正确参数: `layers=["backscatter"], spatial_antialiasing=False`
-2. **GDAL 环境**: PyAT 的 dtm_angles_computer 用 gdal.Open 读 dtm elevation。
-   必须设 `GDAL_DATA / GDAL_DRIVER_PATH / PROJ_DATA` 指向 miniconda/Library,
-   否则 `NETCDF:...:elevation does not exist`。
+2. **GDAL 环境 (极易漏, 曾导致整条 pipeline segfault)**: PyAT 的
+   dtm_angles_computer 用 `gdal.Open("NETCDF:...:elevation")` 读 dtm。
+   不仅要设 `GDAL_DATA / GDAL_DRIVER_PATH / PROJ_DATA / PROJ_LIB` 指向
+   miniconda/Library, **还必须把 `miniconda/Library/bin` 前置进 PATH** ——
+   否则 `gdal_netCDF.dll` 加载失败 (报 "Can't load requested DLL", error 126),
+   在 BSAR/归一化读 dtm 的 slope 阶段进程被 killed (segfault, 无 Python traceback)。
+   → 脚本 `apply_gdal_env()` 已做 (含 PATH 前置); 手动复刻调用时务必照做。
+   源码级原因见 `references/globe_debug.md` 坑 2。
 3. **matplotlib 冲突**: GLOBE 的 conda python 在干净/带 GDAL 环境下 savefig 都
    segfault。→ 对比图改用**系统独立 Python** (脚本自动探测 PATH 上的 python,
    或常见安装路径如 C:\Python314), 需 `pip install matplotlib netCDF4 numpy`。
@@ -109,6 +116,7 @@ python globe_bs_pipeline.py --input D:/data/xxx.xsf.nc --zone 51 --res 30 --sout
 - 主脚本: `scripts/globe_bs_pipeline.py` (见 linked_files)
 - 环境自检: `scripts/check_env.py` — agent 接手后先跑, 自动装缺失 pip 包 (`--fix`), 报告 GLOBE/GUI 转换等需人工项
 - 调试知识库: `references/globe_debug.md` (GLOBE/PyAT 内部结构、4 个坑的源码级原因、UTM 推断逻辑、产物校验公式) — 改脚本或排查失败时看
+- 发布到 GitHub: `references/publishing.md` (本地仓库初始化 + HTTPS+token 推送流程, 别人怎么安装) — 用户要分享给别人时看
 
 ## 快速验证命令 (跑完用)
 ```python

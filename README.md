@@ -1,6 +1,6 @@
 # globe-bs-pipeline
 
-GLOBE 软件 EM302 多波束后向散射 (backscatter) 处理自动化 skill。
+GLOBE 软件多波束后向散射 (backscatter) 处理自动化 skill（已用 EM302 实测验证）。
 给定 GLOBE 导出的 `.xsf.nc`（或原始 `.all`），**纯命令行、无需 GUI** 一键生成
 BSAR / 原始 DTM / Angular Renormalization / Sliding Renormalization 及其对应 DTM，
 最后出一张 **四图对比图**（2×2：原始 / 角归一化 / 滑动归一化 / 残差）。
@@ -79,3 +79,8 @@ for f in ["stem.dtm.nc","stem_bs_renorm.dtm.nc","stem_bs_sliding.dtm.nc"]:
 - `.all → .xsf.nc` 转换必须借助 GLOBE GUI，无法 headless 自动化。
 - 对比图必须用能独立运行 matplotlib 的系统 Python 生成（GLOBE 自带 conda 的
   matplotlib 在命令行下 `savefig` 会 segfault）。
+- **声呐适用范围**：代码不绑定特定声呐（`sounder_type=AUTO` 自动检测），
+  底层算法（角响应 / 入射角补偿）对 EM 系列、SeaBeam、Reson 等多波束原理通用；
+  但本 skill **仅用 Kongsberg EM302 数据完整验证过**（7 产物齐全、std 递减符合预期）。
+  其他声呐（尤其非 Kongsberg）未经测试，`reference_level=-20dB`、滑动窗口、insonified area 等
+  参数可能需按声呐微调。
