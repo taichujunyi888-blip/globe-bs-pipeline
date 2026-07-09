@@ -1,0 +1,8 @@
+# 临时/运行产物 (不要让使用者把自己的数据推上来)
+*.dtm.nc
+*.bsar.nc
+*_bs_renorm*.nc
+*_bs_sliding*.nc
+*_backscatter_comparison.png
+__pycache__/
+*.pyc
